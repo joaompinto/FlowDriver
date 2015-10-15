@@ -6,6 +6,13 @@ import wx
 # contrast the two by changing this value.
 BUFFERED = 1
 
+class FlowItem:
+    def __init__(self, pos, size, title, content):
+        self.pos = pos
+        self.size = size
+        self.title = title
+        self.content = content
+
 
 # ---------------------------------------------------------------------------
 
@@ -14,6 +21,7 @@ class MyCanvas(wx.ScrolledWindow):
         wx.ScrolledWindow.__init__(self, parent, id, (0, 0), size=size, style=wx.SUNKEN_BORDER)
 
         self.selected_item = None
+        self.moving_item = None
         self.lines = []
         self.flow_items = []
         self.maxWidth = 1000
@@ -51,18 +59,20 @@ class MyCanvas(wx.ScrolledWindow):
         dc = wx.BufferedPaintDC(self, self.buffer, wx.BUFFER_VIRTUAL_AREA)
 
     def DoDrawing(self, dc):
+        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+        dc.Clear()
         dc.BeginDrawing()
         self.DrawFlowItems(dc)
         dc.EndDrawing()
 
     def DrawFlowItems(self, dc):
-        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 4))
+        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
         font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
         dc.SetFont(font)
-        dc.SetTextForeground(wx.BLACK)
-        for pos, size, title, content in self.flow_items:
-            dc.DrawRectangle(pos.x, pos.y, size.x, size.y)
-            dc.DrawText(title, pos.x + 2, pos.y)
+        dc.SetTextForeground(wx.BLUE)
+        for item in self.flow_items:
+            dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
+            dc.DrawText(item.title, item.pos.x + 2, item.pos.y)
 
     def SetXY(self, event):
         self.x, self.y = self.ConvertEventCoords(event)
@@ -77,20 +87,26 @@ class MyCanvas(wx.ScrolledWindow):
 
         if event.LeftDown():
             self.SetFocus()
+            current_pos = wx.Point(event.GetX(), event.GetY())
+            self.moving_item = self.item_at_pos(current_pos)
+            if self.moving_item:
+                self.move_offset = wx.Point(event.GetX() - self.moving_item.pos.x, event.GetY() - self.moving_item.pos.x)
+                self.start_move_pos = current_pos
+                self.CaptureMouse()
+            #self.moving = True
 
-            self.curLine = []
-            self.CaptureMouse()
-            self.drawing = True
-
-        elif event.Dragging() and self.drawing:
+        elif event.Dragging() and self.moving_item:
+            old_rect = wx.Rect()
+            selected_item = self.selected_item
+            x1, y1 = self.CalcScrolledPosition(selected_item.pos.x, selected_item.pos.y)
+            x2, y2 = self.CalcScrolledPosition(selected_item.pos.x+selected_item.size.x, selected_item.pos.y+selected_item.size.y)
+            old_rect.SetTopLeft((x1, y1))
+            old_rect.SetBottomRight((x2, y2))
+            old_rect.Inflate(2, 2)
+            self.selected_item.pos.x = event.GetX() - self.move_offset.x
+            self.selected_item.pos.y = event.GetY() - self.move_offset.y
             dc = wx.BufferedDC(None, self.buffer)
-
-            dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
-            coords = (self.x, self.y) + self.ConvertEventCoords(event)
-            self.curLine.append(coords)
-            dc.DrawLine(*coords)
-            self.SetXY(event)
-
+            self.DoDrawing(dc)
             # figure out what part of the window to refresh, based
             # on what parts of the buffer we just updated
             x1, y1, x2, y2 = dc.GetBoundingBox()
@@ -101,46 +117,48 @@ class MyCanvas(wx.ScrolledWindow):
             rect.SetTopLeft((x1, y1))
             rect.SetBottomRight((x2, y2))
             rect.Inflate(2, 2)
+
+            print x1, y1, x2, y2
             # refresh it
+
+            self.RefreshRect(old_rect)
             self.RefreshRect(rect)
 
-        elif event.LeftUp() and self.drawing:
-            self.lines.append(self.curLine)
-            self.curLine = []
+        elif event.LeftUp() and self.moving_item:
+            self.moving_item = None
             self.ReleaseMouse()
-            self.drawing = False
 
     def get_next_item_position(self):
         """
         Free position to place the next item
         :return:
         """
-        radius = 100
-        potential_pos = ((0, radius), (radius, 0), (-radius, 0), (-radius, 0))
+        radius = 60
+        potential_pos = ((radius, 0), (0, radius), (-radius, 0), (0, -radius))
         lookup_locations = [wx.Point(100, 100)]
-        if self.selected_item:
-            last_pos = self.selected_item[0]
+        selected_item = self.selected_item
+        if selected_item:
             for x, y in potential_pos:
-                lookup_locations.append(wx.Point(last_pos.x + x, last_pos.y + y))
+                lookup_locations.append(wx.Point(selected_item.pos.x + x, selected_item.pos.y + y))
+
 
         for pos in lookup_locations:
-            print "LOOK", pos
             if self.item_at_pos(pos) is None:
                 return pos
 
     def item_at_pos(self, check_pos):
         for item in self.flow_items:
-            pos, size, label, content = item
-            x_delta = check_pos.x - pos.x
-            y_delta = check_pos.y - pos.y
-            if 0 <= x_delta < size.x and 0 <= y_delta < size.y:
+            x_delta = check_pos.x - item.pos.x
+            y_delta = check_pos.y - item.pos.y
+            if 0 <= x_delta < item.size.x and 0 <= y_delta < item.size.y:
                 return item
 
     def add_flow_item(self, title, content):
         pos = self.get_next_item_position()
-        print "POS", pos
         size = wx.Size(50, 100)
-        self.flow_items.append((pos, size, title, content))
+        item = FlowItem(pos, size, title, content)
+        self.flow_items.append(item)
+        self.selected_item = item
         dc = wx.BufferedDC(None, self.buffer)
         self.DoDrawing(dc)
         self.x, self.y = pos

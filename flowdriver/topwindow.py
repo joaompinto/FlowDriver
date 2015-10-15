@@ -47,6 +47,5 @@ class TopWindow(wx.Frame):
         RichTextFrame(self).Show()
 
     def OnAddFlowItem(self, event):
-        print "Received add flow item"
         self.canvas.add_flow_item(event.title, event.content)
 

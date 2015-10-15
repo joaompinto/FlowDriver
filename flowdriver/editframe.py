@@ -54,7 +54,6 @@ class RichTextFrame(wx.Frame):
     def OnClose(self, event):
         evt = AddFlowItemEvent(title=self.m_textCtrl2.GetLineText(0), content=None)
         wx.PostEvent(self.parent, evt)
-        print "Postint event to ", self.parent
         self.Destroy()
 
 
