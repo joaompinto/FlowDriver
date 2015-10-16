@@ -1,10 +1,6 @@
 import wx
 
 
-# There are two different approaches to drawing, buffered or direct.
-# This sample shows both approaches so you can easily compare and
-# contrast the two by changing this value.
-BUFFERED = 1
 
 class FlowItem:
     def __init__(self, pos, size, title, content):
@@ -21,14 +17,14 @@ class MyCanvas(wx.ScrolledWindow):
         wx.ScrolledWindow.__init__(self, parent, id, (0, 0), size=size, style=wx.SUNKEN_BORDER)
 
         self.selected_item = None
-        self.moving_item = None
+        self.clicked_item = None
         self.lines = []
         self.flow_items = []
         self.maxWidth = 1000
         self.maxHeight = 1000
         self.x = self.y = 0
         self.curLine = []
-        self.drawing = False
+        self.click_offset = None
 
         self.SetBackgroundColour("WHITE")
         # self.SetCursor(wx.StockCursor(wx.CURSOR_PENCIL))
@@ -82,50 +78,34 @@ class MyCanvas(wx.ScrolledWindow):
         return newpos
 
     def OnLeftButtonEvent(self, event):
+
+        event_pos = wx.Point(event.GetX(), event.GetY())
+
         if self.IsAutoScrolling():
             self.StopAutoScrolling()
 
         if event.LeftDown():
             self.SetFocus()
-            current_pos = wx.Point(event.GetX(), event.GetY())
-            self.moving_item = self.item_at_pos(current_pos)
-            if self.moving_item:
-                self.move_offset = wx.Point(event.GetX() - self.moving_item.pos.x, event.GetY() - self.moving_item.pos.x)
-                self.start_move_pos = current_pos
+            self.clicked_item = clicked_item = self.item_at_pos(event_pos)
+            if clicked_item:
+                self.click_offset = wx.Point(event_pos.x - clicked_item.pos.x, event_pos.y - clicked_item.pos.y)
                 self.CaptureMouse()
-            #self.moving = True
 
-        elif event.Dragging() and self.moving_item:
-            old_rect = wx.Rect()
-            selected_item = self.selected_item
-            x1, y1 = self.CalcScrolledPosition(selected_item.pos.x, selected_item.pos.y)
-            x2, y2 = self.CalcScrolledPosition(selected_item.pos.x+selected_item.size.x, selected_item.pos.y+selected_item.size.y)
-            old_rect.SetTopLeft((x1, y1))
-            old_rect.SetBottomRight((x2, y2))
-            old_rect.Inflate(2, 2)
-            self.selected_item.pos.x = event.GetX() - self.move_offset.x
-            self.selected_item.pos.y = event.GetY() - self.move_offset.y
+        elif event.Dragging() and self.clicked_item:
+
+            clicked_item = self.clicked_item
+            clicked_item.pos.x = event_pos.x - self.click_offset.x
+            clicked_item.pos.y = event_pos.y - self.click_offset.y
+
             dc = wx.BufferedDC(None, self.buffer)
             self.DoDrawing(dc)
-            # figure out what part of the window to refresh, based
-            # on what parts of the buffer we just updated
-            x1, y1, x2, y2 = dc.GetBoundingBox()
-            x1, y1 = self.CalcScrolledPosition(x1, y1)
-            x2, y2 = self.CalcScrolledPosition(x2, y2)
-            # make a rectangle
-            rect = wx.Rect()
-            rect.SetTopLeft((x1, y1))
-            rect.SetBottomRight((x2, y2))
-            rect.Inflate(2, 2)
 
-            print x1, y1, x2, y2
             # refresh it
+            #self.RefreshRect(rect)
+            self.Refresh()
 
-            self.RefreshRect(old_rect)
-            self.RefreshRect(rect)
-
-        elif event.LeftUp() and self.moving_item:
-            self.moving_item = None
+        elif event.LeftUp() and self.clicked_item:
+            self.clicked_item = None
             self.ReleaseMouse()
 
     def get_next_item_position(self):
