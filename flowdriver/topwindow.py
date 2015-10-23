@@ -6,7 +6,6 @@ from flowcanvas import MyCanvas
 from editframe import RichTextFrame
 from flowevents import *
 
-
 def scale_bitmap(bitmap, width, height):
     image = wx.ImageFromBitmap(bitmap)
     image = image.Scale(width, height, wx.IMAGE_QUALITY_HIGH)
@@ -15,7 +14,6 @@ def scale_bitmap(bitmap, width, height):
 
 
 class TopWindow(wx.Frame):
-
     def __init__(self, title):
         wx.Frame.__init__(self, None, title=title, size=(800, 600))
 
@@ -33,19 +31,16 @@ class TopWindow(wx.Frame):
         self.SetMenuBar(self.m_menubar1)
 
         self.Centre(wx.BOTH)
-        self.Bind(EVT_ADD_FLOW_ITEM, self.OnAddFlowItem)
+
+
 
     def CreateToolBar(self, *args, **kwargs):
         self.m_toolBar1 = wx.ToolBar(self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TB_HORIZONTAL)
-        self.m_toolBar1.SetToolBitmapSize((32,32))
+        self.m_toolBar1.SetToolBitmapSize((32, 32))
         self.m_toolBar1.AddLabelTool(1, '', scale_bitmap(wx.Bitmap('images/plus.png'), 32, 32))
         self.Bind(wx.EVT_TOOL, self.OnAddFlowItemClick, id=1)
         self.m_toolBar1.Realize()
         self.mainSizer.Add(self.m_toolBar1, 0, wx.EXPAND, 5)
 
     def OnAddFlowItemClick(self, event):
-        RichTextFrame(self).Show()
-
-    def OnAddFlowItem(self, event):
-        self.canvas.add_flow_item(event.title, event.content)
-
+        RichTextFrame(self.canvas).Show()

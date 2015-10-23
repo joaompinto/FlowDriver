@@ -1,5 +1,6 @@
 import wx
-
+from editframe import RichTextFrame
+from flowevents import *
 
 
 class FlowItem:
@@ -44,6 +45,9 @@ class MyCanvas(wx.ScrolledWindow):
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_MOTION, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
+        self.Bind(EVT_UPD_FLOW_ITEM, self.OnUpdateFlowItem)
+        self.Bind(EVT_ADD_FLOW_ITEM, self.OnAddFlowItem)
 
     def getWidth(self):
         return self.maxWidth
@@ -76,6 +80,13 @@ class MyCanvas(wx.ScrolledWindow):
     def ConvertEventCoords(self, event):
         newpos = self.CalcUnscrolledPosition(event.GetX(), event.GetY())
         return newpos
+
+    def OnDoubleClick(self, event):
+        event_pos = wx.Point(event.GetX(), event.GetY())
+        clicked_item = self.item_at_pos(event_pos)
+        if clicked_item:
+            RichTextFrame(self, clicked_item.title, clicked_item.content).Show()
+
 
     def OnLeftButtonEvent(self, event):
 
@@ -142,4 +153,15 @@ class MyCanvas(wx.ScrolledWindow):
         dc = wx.BufferedDC(None, self.buffer)
         self.DoDrawing(dc)
         self.x, self.y = pos
+        self.Refresh()
+
+    def OnAddFlowItem(self, event):
+        self.add_flow_item(event.title, event.content)
+
+
+    def OnUpdateFlowItem(self, event):
+        self.selected_item.title = event.title
+        self.selected_item.contents = event.content
+        dc = wx.BufferedDC(None, self.buffer)
+        self.DoDrawing(dc)
         self.Refresh()

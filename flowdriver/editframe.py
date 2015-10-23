@@ -6,9 +6,12 @@ from flowevents import *
 # ----------------------------------------------------------------------
 
 class RichTextFrame(wx.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, title=None, content=None):
         wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=wx.EmptyString, pos=wx.DefaultPosition,
                           size=wx.Size(500, 300), style=wx.DEFAULT_FRAME_STYLE)
+        self.is_new_item = True
+        if title is not None:
+            self.is_new_item = False
 
         self.parent = parent
         self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
@@ -17,6 +20,8 @@ class RichTextFrame(wx.Frame):
 
         self.m_textCtrl2 = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
                                        style=wx.TE_PROCESS_TAB)
+        if title is not None:
+            self.m_textCtrl2.ChangeValue(title)
         self.m_textCtrl2.Bind(wx.EVT_CHAR, self.on_title_key_char)
         bSizer2.Add(self.m_textCtrl2, 0, wx.ALL, 5)
 
@@ -51,6 +56,9 @@ class RichTextFrame(wx.Frame):
         return
 
     def OnClose(self, event):
-        evt = AddFlowItemEvent(title=self.m_textCtrl2.GetLineText(0), content=None)
+        if self.is_new_item:
+            evt = AddFlowItemEvent(title=self.m_textCtrl2.GetLineText(0), content=None)
+        else:
+            evt = UpdateFlowItemEvent(title=self.m_textCtrl2.GetLineText(0), content=None)
         wx.PostEvent(self.parent, evt)
         self.Destroy()
