@@ -33,7 +33,6 @@ class MyCanvas(wx.ScrolledWindow):
         self.SetVirtualSize((self.maxWidth, self.maxHeight))
         self.SetScrollRate(20, 20)
 
-
         # Initialize the buffer bitmap.  No real DC is needed at this point.
         self.buffer = wx.EmptyBitmap(self.maxWidth, self.maxHeight)
         dc = wx.BufferedDC(None, self.buffer)
@@ -65,14 +64,17 @@ class MyCanvas(wx.ScrolledWindow):
         self.DrawFlowItems(dc)
         dc.EndDrawing()
 
-    def DrawFlowItems(self, dc):
-        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
-        font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
-        dc.SetFont(font)
-        dc.SetTextForeground(wx.BLUE)
-        for item in self.flow_items:
+    def DrawItem(self, item, dc):
+            dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
             dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
+            font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
+            dc.SetFont(font)
+            dc.SetTextForeground(wx.BLUE)
             dc.DrawText(item.title, item.pos.x + 2, item.pos.y)
+
+    def DrawFlowItems(self, dc):
+        for item in self.flow_items:
+            self.DrawItem(item, dc)
 
     def SetXY(self, event):
         self.x, self.y = self.ConvertEventCoords(event)
@@ -83,7 +85,7 @@ class MyCanvas(wx.ScrolledWindow):
 
     def OnDoubleClick(self, event):
         event_pos = wx.Point(event.GetX(), event.GetY())
-        clicked_item = self.item_at_pos(event_pos)
+        self.clicked_item = clicked_item = self.item_at_pos(event_pos)
         if clicked_item:
             RichTextFrame(self, clicked_item.title, clicked_item.content).Show()
 
@@ -105,15 +107,19 @@ class MyCanvas(wx.ScrolledWindow):
         elif event.Dragging() and self.clicked_item:
 
             clicked_item = self.clicked_item
+            old_rect = wx.Rect(clicked_item.pos.x, clicked_item.pos.y, clicked_item.size.x, clicked_item.size.y)
+            old_rect.Inflate(2, 2)
             clicked_item.pos.x = event_pos.x - self.click_offset.x
             clicked_item.pos.y = event_pos.y - self.click_offset.y
+            new_rect = wx.Rect(clicked_item.pos.x, clicked_item.pos.y, clicked_item.size.x, clicked_item.size.y)
+            new_rect.Inflate(2, 2)
 
             dc = wx.BufferedDC(None, self.buffer)
             self.DoDrawing(dc)
 
-            # refresh it
-            #self.RefreshRect(rect)
-            self.Refresh()
+            # refresh old and new rects
+            self.RefreshRect(old_rect)
+            self.RefreshRect(new_rect)
 
         elif event.LeftUp() and self.clicked_item:
             self.clicked_item = None
@@ -160,8 +166,14 @@ class MyCanvas(wx.ScrolledWindow):
 
 
     def OnUpdateFlowItem(self, event):
-        self.selected_item.title = event.title
-        self.selected_item.contents = event.content
+        clicked_item = self.clicked_item
+        if not clicked_item:
+            return
+        clicked_item.title = event.title
+        clicked_item.contents = event.content
         dc = wx.BufferedDC(None, self.buffer)
-        self.DoDrawing(dc)
-        self.Refresh()
+        dc.BeginDrawing()
+        self.DrawItem(self.clicked_item, dc)
+        rect = wx.Rect(clicked_item.pos.x, clicked_item.pos.y, clicked_item.size.x, clicked_item.size.y)
+        dc.EndDrawing()
+        self.RefreshRect(rect)
