@@ -15,12 +15,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
-
-def start():
-    from flowdriver import application
-    app = application.Application()
-    app.start()
+from flowdriver.application import Application
 
 if __name__ == '__main__':
-    start()
+    app = Application()
+    app.start()

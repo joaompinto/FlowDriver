@@ -9,6 +9,7 @@ from topwindow import TopWindow
 
 
 class Application:
+
     def __init__(self):
         self.app = wx.App(redirect=False)
         self.top = TopWindow("FlowDriver")
