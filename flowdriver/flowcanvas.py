@@ -26,8 +26,6 @@ class FlowItem:
         return wx.Point(self.pos.x + self.size.x / 2, self.pos.y + self.size.y / 2)
 
 
-# ---------------------------------------------------------------------------
-
 class MyCanvas(wx.ScrolledWindow):
     def __init__(self, parent, id=-1, size=wx.DefaultSize):
         wx.ScrolledWindow.__init__(self, parent, id, (0, 0), size=size, style=wx.SUNKEN_BORDER)
@@ -110,21 +108,21 @@ class MyCanvas(wx.ScrolledWindow):
 
     def DrawItem(self, item, dc):
         if item == self.selected_item:
-            color = 'BLACK'
-            pensize = 2
+            dc.SetPen(wx.Pen("BLACK", 2))
         else:
-            color = 'MEDIUM FOREST GREEN'
-            pensize = 1
-        dc.SetPen(wx.Pen(color, pensize))
+            dc.SetPen(wx.Pen("WHITE", 0))
         dc.SetBrush(wx.Brush("WHITE"))
         dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
-        dc.SetPen(wx.Pen(color, 0))
-        dc.SetBrush(wx.Brush("GREEN YELLOW"))
+        dc.SetPen(wx.Pen("WHITE", 0))
+
+        # Draw the label
+        dc.SetBrush(wx.Brush(wx.Colour(49, 58, 117)))
         dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, 20)
-        font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
+
+        font = wx.Font(10, wx.MODERN, wx.NORMAL, wx.BOLD)
         dc.SetFont(font)
-        dc.SetTextForeground(wx.BLUE)
-        dc.DrawText(item.title, item.pos.x + 4, item.pos.y)
+        dc.SetTextForeground(wx.WHITE)
+        dc.DrawText(item.title, item.pos.x + 4, item.pos.y+2)
 
         dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
         for linked_item in item.linked_items:
@@ -143,9 +141,8 @@ class MyCanvas(wx.ScrolledWindow):
         return wx.Point(x, y)
 
     def OnDoubleClick(self, event):
-        self.clicked_item = clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
-        if clicked_item:
-            RichTextFrame(self, clicked_item.title, clicked_item.content).Show()
+        if self.selected_item:
+            RichTextFrame(self, self.selected_item.title, self.selected_item.content).Show()
 
     def OnLeftButtonEvent(self, event):
 
@@ -158,6 +155,7 @@ class MyCanvas(wx.ScrolledWindow):
             self.SetFocus()
             self.clicked_item = clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
             if clicked_item:
+                self.selected_item = clicked_item
                 self.capturing_mouse = True
                 self.CaptureMouse()
 
@@ -224,9 +222,6 @@ class MyCanvas(wx.ScrolledWindow):
         self.add_flow_item(event.title, event.content)
 
     def OnUpdateFlowItem(self, event):
-        clicked_item = self.clicked_item
-        if not clicked_item:
-            return
-        clicked_item.title = event.title
-        clicked_item.contents = event.content
+        self.selected_item.title = event.title
+        self.selected_item.contents = event.content
         self.UpdateDrawing()
