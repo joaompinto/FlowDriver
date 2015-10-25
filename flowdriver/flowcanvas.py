@@ -42,9 +42,6 @@ class MyCanvas(wx.ScrolledWindow):
         self.curLine = []
         self.click_offset = None
 
-        self.SetBackgroundColour("WHITE")
-        # self.SetCursor(wx.StockCursor(wx.CURSOR_PENCIL))
-
         self.SetVirtualSize((self.maxWidth, self.maxHeight))
         self.SetScrollRate(20, 20)
 
@@ -76,7 +73,7 @@ class MyCanvas(wx.ScrolledWindow):
         del dc
 
     def Draw(self, dc):
-        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+        dc.SetBackground(wx.Brush("LIGHT GREY"))
         dc.Clear()
         dc.BeginDrawing()
         self.DrawFlowItems(dc)
@@ -113,11 +110,17 @@ class MyCanvas(wx.ScrolledWindow):
 
     def DrawItem(self, item, dc):
         if item == self.selected_item:
-            color = 'BLUE'
+            color = 'BLACK'
+            pensize = 2
         else:
             color = 'MEDIUM FOREST GREEN'
-        dc.SetPen(wx.Pen(color, 2))
-        dc.DrawRoundedRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y, 10)
+            pensize = 1
+        dc.SetPen(wx.Pen(color, pensize))
+        dc.SetBrush(wx.Brush("WHITE"))
+        dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
+        dc.SetPen(wx.Pen(color, 0))
+        dc.SetBrush(wx.Brush("GREEN YELLOW"))
+        dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, 20)
         font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
         dc.SetFont(font)
         dc.SetTextForeground(wx.BLUE)
@@ -155,7 +158,6 @@ class MyCanvas(wx.ScrolledWindow):
             self.SetFocus()
             self.clicked_item = clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
             if clicked_item:
-                print "Capturing"
                 self.capturing_mouse = True
                 self.CaptureMouse()
 
@@ -177,7 +179,6 @@ class MyCanvas(wx.ScrolledWindow):
             self.UpdateDrawing()
 
         elif event.LeftUp():
-            print "Releasing"
             if self.capturing_mouse:
                 self.ReleaseMouse()
                 self.capturing_mouse = False
@@ -210,7 +211,7 @@ class MyCanvas(wx.ScrolledWindow):
 
     def add_flow_item(self, title, content):
         pos = self.get_next_item_position()
-        size = wx.Size(50, 100)
+        size = wx.Size(100, 110)
         item = FlowItem(pos, size, title, content)
         self.flow_items.append(item)
         if self.selected_item:  # Link from selected item
