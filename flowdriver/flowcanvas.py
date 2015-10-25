@@ -1,5 +1,12 @@
+# -*- coding: utf-8 -*-
+
+"""
+The flow canvas provides a scrollable canvas where flow items are drawn.
+It also handles the design editing actions.
+"""
+
 import wx
-from editframe import RichTextFrame
+from itemeditframe import RichTextFrame
 from flowevents import *
 
 
@@ -35,7 +42,7 @@ class MyCanvas(wx.ScrolledWindow):
 
         # Initialize the buffer bitmap.  No real DC is needed at this point.
         self.buffer = wx.EmptyBitmap(self.maxWidth, self.maxHeight)
-        dc = wx.BufferedDC(None, self.buffer)
+        self.dc = dc = wx.BufferedDC(None, self.buffer)
         dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         dc.Clear()
         self.DoDrawing(dc)
@@ -65,12 +72,12 @@ class MyCanvas(wx.ScrolledWindow):
         dc.EndDrawing()
 
     def DrawItem(self, item, dc):
-            dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
-            dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
-            font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
-            dc.SetFont(font)
-            dc.SetTextForeground(wx.BLUE)
-            dc.DrawText(item.title, item.pos.x + 2, item.pos.y)
+        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
+        dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
+        font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
+        dc.SetFont(font)
+        dc.SetTextForeground(wx.BLUE)
+        dc.DrawText(item.title, item.pos.x + 2, item.pos.y)
 
     def DrawFlowItems(self, dc):
         for item in self.flow_items:
@@ -88,7 +95,6 @@ class MyCanvas(wx.ScrolledWindow):
         self.clicked_item = clicked_item = self.item_at_pos(event_pos)
         if clicked_item:
             RichTextFrame(self, clicked_item.title, clicked_item.content).Show()
-
 
     def OnLeftButtonEvent(self, event):
 
@@ -138,7 +144,6 @@ class MyCanvas(wx.ScrolledWindow):
             for x, y in potential_pos:
                 lookup_locations.append(wx.Point(selected_item.pos.x + x, selected_item.pos.y + y))
 
-
         for pos in lookup_locations:
             if self.item_at_pos(pos) is None:
                 return pos
@@ -163,7 +168,6 @@ class MyCanvas(wx.ScrolledWindow):
 
     def OnAddFlowItem(self, event):
         self.add_flow_item(event.title, event.content)
-
 
     def OnUpdateFlowItem(self, event):
         clicked_item = self.clicked_item

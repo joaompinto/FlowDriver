@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+
+"""
+The item edit frame provides content editing for flow items
+"""
+
 import wx
 import wx.richtext as rt
 from flowevents import *
 
-
-# ----------------------------------------------------------------------
 
 class RichTextFrame(wx.Frame):
     def __init__(self, parent, title=None, content=None):
@@ -16,14 +20,14 @@ class RichTextFrame(wx.Frame):
         self.parent = parent
         self.SetSizeHintsSz(wx.DefaultSize, wx.DefaultSize)
 
-        bSizer2 = wx.BoxSizer(wx.VERTICAL)
+        verticalSizer = wx.BoxSizer(wx.VERTICAL)
 
-        self.m_textCtrl2 = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
-                                       style=wx.TE_PROCESS_TAB)
+        self.titleCtrl = wx.TextCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize,
+                                     style=wx.TE_PROCESS_TAB)
         if title is not None:
-            self.m_textCtrl2.ChangeValue(title)
-        self.m_textCtrl2.Bind(wx.EVT_CHAR, self.on_title_key_char)
-        bSizer2.Add(self.m_textCtrl2, 0, wx.ALL, 5)
+            self.titleCtrl.ChangeValue(title)
+        self.titleCtrl.Bind(wx.EVT_CHAR, self.on_title_key_char)
+        verticalSizer.Add(self.titleCtrl, 0, wx.ALL, 5)
 
         self.Centre(wx.BOTH)
 
@@ -39,10 +43,10 @@ class RichTextFrame(wx.Frame):
         self.rtc.Thaw()
 
         self.rtc.SetSizeHints(400, 200)
-        bSizer2.Add(self.rtc, 0, wx.ALL, 5)
+        verticalSizer.Add(self.rtc, 0, wx.ALL, 5)
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-        self.SetSizer(bSizer2)
+        self.SetSizer(verticalSizer)
         self.Layout()
 
     def on_title_key_char(self, event):
@@ -57,8 +61,8 @@ class RichTextFrame(wx.Frame):
 
     def OnClose(self, event):
         if self.is_new_item:
-            evt = AddFlowItemEvent(title=self.m_textCtrl2.GetLineText(0), content=None)
+            evt = AddFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=None)
         else:
-            evt = UpdateFlowItemEvent(title=self.m_textCtrl2.GetLineText(0), content=None)
+            evt = UpdateFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=None)
         wx.PostEvent(self.parent, evt)
         self.Destroy()
