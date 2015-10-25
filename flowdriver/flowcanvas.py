@@ -9,8 +9,10 @@ http://wiki.wxpython.org/DoubleBufferedDrawing
 """
 
 import wx
+from uuid import uuid4
 from itemeditframe import RichTextFrame
 from flowevents import *
+
 
 
 class FlowItem:
@@ -20,6 +22,7 @@ class FlowItem:
         self.title = title
         self.content = content
         self.linked_items = []
+        self.id = uuid4()
 
     @property
     def center(self):
