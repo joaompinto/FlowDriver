@@ -14,7 +14,6 @@ from itemeditframe import RichTextFrame
 from flowevents import *
 
 
-
 class FlowItem:
     def __init__(self, pos, size, title, content):
         self.pos = pos
@@ -53,6 +52,7 @@ class MyCanvas(wx.ScrolledWindow):
         self.capturing_mouse = False
 
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButtonEvent)
+        self.Bind(wx.EVT_RIGHT_UP, self.OnRightButtonEvent)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_MOTION, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
@@ -68,9 +68,15 @@ class MyCanvas(wx.ScrolledWindow):
                 if self.selected_item in item.linked_items:
                     item.linked_items.remove(self.selected_item)
             self.selected_item = None
-            self.UpdateDrawing()
-        event.Skip()
 
+        if event.GetKeyCode() == wx.WXK_SPACE and self.selected_item:
+            self.selected_item.linked_items = []
+            for item in self.flow_items:
+                if self.selected_item in item.linked_items:
+                    item.linked_items.remove(self.selected_item)
+
+        self.UpdateDrawing()
+        event.Skip()
 
     def getWidth(self):
         return self.maxWidth
@@ -136,7 +142,7 @@ class MyCanvas(wx.ScrolledWindow):
         font = wx.Font(10, wx.MODERN, wx.NORMAL, wx.BOLD)
         dc.SetFont(font)
         dc.SetTextForeground(wx.WHITE)
-        dc.DrawText(item.title, item.pos.x + 4, item.pos.y+2)
+        dc.DrawText(item.title, item.pos.x + 4, item.pos.y + 2)
 
         dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
         for linked_item in item.linked_items:
@@ -195,6 +201,15 @@ class MyCanvas(wx.ScrolledWindow):
                 self.ReleaseMouse()
                 self.capturing_mouse = False
             self.clicked_item = None
+
+    def OnRightButtonEvent(self, event):
+        event_pos = wx.Point(event.GetX(), event.GetY())
+        clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
+        if self.selected_item and clicked_item and clicked_item != self.selected_item:
+            if clicked_item not in self.selected_item.linked_items:
+                self.selected_item.linked_items.append(clicked_item)
+            self.UpdateDrawing()
+        event.Skip()
 
     def get_next_item_position(self):
         """
