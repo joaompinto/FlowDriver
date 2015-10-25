@@ -14,7 +14,7 @@ from itemeditframe import RichTextFrame
 from flowevents import *
 
 
-class FlowItem:
+class FlowItem(object):
     def __init__(self, pos, size, title, content):
         self.pos = pos
         self.size = size
@@ -135,15 +135,30 @@ class MyCanvas(wx.ScrolledWindow):
         dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
         dc.SetPen(wx.Pen("WHITE", 0))
 
-        # Draw the label
+        # Draw the label box
         dc.SetBrush(wx.Brush(wx.Colour(49, 58, 117)))
         dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, 20)
 
+        # Print the title
         font = wx.Font(10, wx.MODERN, wx.NORMAL, wx.BOLD)
         dc.SetFont(font)
         dc.SetTextForeground(wx.WHITE)
         dc.DrawText(item.title, item.pos.x + 4, item.pos.y + 2)
 
+        # Draw the context text
+        font = wx.Font(8, wx.MODERN, wx.NORMAL, wx.BOLD)
+        dc.SetFont(font)
+        dc.SetTextForeground(wx.BLUE)
+        if item.content:
+            y = 20
+            for line in item.content.split('\n'):
+                text = line[:16]
+                if len(line) > 18:
+                    text = text[:13] + "..."
+                dc.DrawText(text, item.pos.x + 4, item.pos.y + y)
+                y += 10
+
+        # Draw the link lines
         dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
         for linked_item in item.linked_items:
             source_pos, target_pos = self.determine_link_points(item, linked_item)
@@ -238,7 +253,7 @@ class MyCanvas(wx.ScrolledWindow):
 
     def add_flow_item(self, title, content):
         pos = self.get_next_item_position()
-        size = wx.Size(100, 110)
+        size = wx.Size(120, 110)
         item = FlowItem(pos, size, title, content)
         self.flow_items.append(item)
         if self.selected_item:  # Link from selected item
@@ -248,9 +263,11 @@ class MyCanvas(wx.ScrolledWindow):
         self.x, self.y = pos
 
     def OnAddFlowItem(self, event):
+        print event.content
         self.add_flow_item(event.title, event.content)
 
     def OnUpdateFlowItem(self, event):
         self.selected_item.title = event.title
-        self.selected_item.contents = event.content
+        print "Updating", event.content
+        self.selected_item.content = event.content
         self.UpdateDrawing()

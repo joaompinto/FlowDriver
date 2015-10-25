@@ -40,7 +40,7 @@ def open_file(filename):
         title = item.getAttribute('title')
         pos = item.getAttribute('position')
         size = item.getAttribute('size')
-        content = item.nodeValue
+        content = item.firstChild.nodeValue
         new_flow_item = FlowItem(pos, size, title, content)
         new_flow_item.id = save_id
         loaded_items.append(new_flow_item)

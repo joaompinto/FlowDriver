@@ -37,6 +37,8 @@ class RichTextFrame(wx.Frame):
         self.rtc.BeginSuppressUndo()
 
         self.rtc.BeginFontSize(12)
+        if content:
+            self.rtc.WriteText(content)
         self.rtc.EndFontSize()
 
         self.rtc.EndSuppressUndo()
@@ -60,9 +62,12 @@ class RichTextFrame(wx.Frame):
         return
 
     def OnClose(self, event):
+        content = ''
+        for i in range(self.rtc.GetNumberOfLines()):
+            content += self.rtc.GetLineText(i)+"\n"
         if self.is_new_item:
-            evt = AddFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=None)
+            evt = AddFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=content)
         else:
-            evt = UpdateFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=None)
+            evt = UpdateFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=content)
         wx.PostEvent(self.parent, evt)
         self.Destroy()
