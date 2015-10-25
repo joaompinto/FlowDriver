@@ -52,6 +52,8 @@ class MyCanvas(wx.ScrolledWindow):
         self.buffer = wx.EmptyBitmap(self.maxWidth, self.maxHeight)
         self.UpdateDrawing()
 
+        self.capturing_mouse = False
+
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_LEFT_UP, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_MOTION, self.OnLeftButtonEvent)
@@ -59,6 +61,7 @@ class MyCanvas(wx.ScrolledWindow):
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.Bind(EVT_UPD_FLOW_ITEM, self.OnUpdateFlowItem)
         self.Bind(EVT_ADD_FLOW_ITEM, self.OnAddFlowItem)
+
 
     def getWidth(self):
         return self.maxWidth
@@ -114,11 +117,11 @@ class MyCanvas(wx.ScrolledWindow):
         else:
             color = 'MEDIUM FOREST GREEN'
         dc.SetPen(wx.Pen(color, 2))
-        dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
+        dc.DrawRoundedRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y, 10)
         font = wx.Font(10, wx.SWISS, wx.NORMAL, wx.NORMAL)
         dc.SetFont(font)
         dc.SetTextForeground(wx.BLUE)
-        dc.DrawText(item.title, item.pos.x + 2, item.pos.y)
+        dc.DrawText(item.title, item.pos.x + 4, item.pos.y)
 
         dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
         for linked_item in item.linked_items:
@@ -149,27 +152,35 @@ class MyCanvas(wx.ScrolledWindow):
             self.StopAutoScrolling()
 
         if event.LeftDown():
-            self.CaptureMouse()
             self.SetFocus()
             self.clicked_item = clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
             if clicked_item:
+                print "Capturing"
+                self.capturing_mouse = True
+                self.CaptureMouse()
+
                 self.selected_item = clicked_item
                 self.UpdateDrawing()  # Need to update the selected item color
                 self.click_offset = wx.Point(event_pos.x - clicked_item.pos.x, event_pos.y - clicked_item.pos.y)
 
         elif event.Dragging() and self.clicked_item:
 
-            clicked_item = self.clicked_item
             new_pos = event_pos - self.click_offset
 
-            if new_pos.x < 0 or new_pos.y < 0:
-                return
+            # Limit movement to the canvas boundaries
+            new_pos.x = max(new_pos.x, 0)
+            new_pos.y = max(new_pos.y, 0)
+            new_pos.x = min(new_pos.x, self.maxWidth - self.clicked_item.size.x - 1)
+            new_pos.y = min(new_pos.y, self.maxHeight - self.clicked_item.size.y - 1)
             self.clicked_item.pos = new_pos
 
             self.UpdateDrawing()
 
         elif event.LeftUp():
-            self.ReleaseMouse()
+            print "Releasing"
+            if self.capturing_mouse:
+                self.ReleaseMouse()
+                self.capturing_mouse = False
             self.clicked_item = None
 
     def get_next_item_position(self):
