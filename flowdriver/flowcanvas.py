@@ -59,6 +59,17 @@ class MyCanvas(wx.ScrolledWindow):
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.Bind(EVT_UPD_FLOW_ITEM, self.OnUpdateFlowItem)
         self.Bind(EVT_ADD_FLOW_ITEM, self.OnAddFlowItem)
+        self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)
+
+    def onKeyDown(self, event):
+        if event.GetKeyCode() == wx.WXK_DELETE and self.selected_item:
+            self.flow_items.remove(self.selected_item)
+            for item in self.flow_items:
+                if self.selected_item in item.linked_items:
+                    item.linked_items.remove(self.selected_item)
+            self.selected_item = None
+            self.UpdateDrawing()
+        event.Skip()
 
 
     def getWidth(self):
