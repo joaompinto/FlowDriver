@@ -12,6 +12,7 @@ import wx
 from uuid import uuid4
 from itemeditframe import RichTextFrame
 from flowevents import *
+from math import atan2, cos, sin, pi
 
 
 class FlowItem(object):
@@ -160,9 +161,18 @@ class MyCanvas(wx.ScrolledWindow):
 
         # Draw the link lines
         dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
+        dc.SetBrush(wx.Brush(wx.NamedColour('MEDIUM FOREST GREEN'), wx.SOLID))
         for linked_item in item.linked_items:
             source_pos, target_pos = self.determine_link_points(item, linked_item)
             dc.DrawLine(source_pos.x, source_pos.y, target_pos.x, target_pos.y)
+            angle = atan2(target_pos.y - source_pos.y, target_pos.x - source_pos.x)
+            ARROW_SIZE = 10
+            pol_points = [(target_pos.x-ARROW_SIZE*cos(angle-pi/6), target_pos.y-ARROW_SIZE*sin(angle-pi/4)),
+                          (target_pos.x, target_pos.y),
+                          (target_pos.x-ARROW_SIZE*cos(angle+pi/6), target_pos.y-ARROW_SIZE*sin(angle+pi/4)),
+                          #(target_pos.x, target_pos.y),
+                          ]
+            dc.DrawPolygon(pol_points)
 
     def DrawFlowItems(self, dc):
         for item in self.flow_items:
