@@ -1,8 +1,19 @@
+# -*- coding: utf-8 -*-
+
+"""
+File save/load routines
+Use a XML format, and bas64 encoding for (XML) item content
+"""
+
 import os
 from yattag import Doc, indent
+
+from base64 import encodestring, decodestring
 from xml.dom.minidom import parse
 from os.path import exists
 from flowdriver.flowcanvas import FlowItem
+
+
 
 def save_file(filename, flow_items):
     doc, tag, text = Doc().tagtext()
@@ -11,7 +22,7 @@ def save_file(filename, flow_items):
         with tag('flow_items'):
             for item in flow_items:
                 with tag('item', id=str(item.id), title=item.title, position=str(item.pos), size=str(item.size)):
-                    text(item.content or '')
+                    text(encodestring(item.content) or '')
                     with tag('linked_items'):
                         for linked_item in item.linked_items:
                             with tag('linked_item', id=str(linked_item.id)):
@@ -40,7 +51,7 @@ def open_file(filename):
         title = item.getAttribute('title')
         pos = item.getAttribute('position')
         size = item.getAttribute('size')
-        content = item.firstChild.nodeValue
+        content = decodestring(item.firstChild.nodeValue)
         new_flow_item = FlowItem(pos, size, title, content)
         new_flow_item.id = save_id
         loaded_items.append(new_flow_item)

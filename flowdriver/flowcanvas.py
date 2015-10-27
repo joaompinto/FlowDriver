@@ -13,7 +13,7 @@ from uuid import uuid4
 from itemeditframe import RichTextFrame
 from flowevents import *
 from math import atan2, cos, sin, pi
-
+from stringutil import rtc2txt
 
 class FlowItem(object):
     def __init__(self, pos, size, title, content):
@@ -21,6 +21,7 @@ class FlowItem(object):
         self.size = size
         self.title = title
         self.content = content
+        self.text_content = rtc2txt(content)
         self.linked_items = []
         self.id = uuid4()
 
@@ -153,9 +154,12 @@ class MyCanvas(wx.ScrolledWindow):
         font = wx.Font(8, wx.MODERN, wx.NORMAL, wx.BOLD)
         dc.SetFont(font)
         dc.SetTextForeground(wx.BLUE)
-        if item.content:
+        if item.text_content:
             y = 20
-            for line in item.content.split('\n'):
+            for line in item.text_content.split('\n'):
+                line = line.strip(' ')
+                if not line:
+                    continue
                 text = line[:16]
                 if len(line) > 18:
                     text = text[:13] + "..."
@@ -297,11 +301,10 @@ class MyCanvas(wx.ScrolledWindow):
         self.x, self.y = pos
 
     def OnAddFlowItem(self, event):
-        print event.content
         self.add_flow_item(event.title, event.content)
 
     def OnUpdateFlowItem(self, event):
         self.selected_item.title = event.title
-        print "Updating", event.content
         self.selected_item.content = event.content
+        self.selected_item.text_content = rtc2txt(event.content)
         self.UpdateDrawing()
