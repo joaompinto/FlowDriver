@@ -34,8 +34,7 @@ class RichTextFrame(wx.Frame):
         self.Centre(wx.BOTH)
 
         self.rtc = rt.RichTextCtrl(self, style=wx.VSCROLL | wx.HSCROLL | wx.NO_BORDER)
-
-        #self.rtc.BeginFontSize(12)
+        self.rtc.Bind(wx.EVT_CHAR, self.on_rtc_key_char)
         wx.CallAfter(self.load_rtc_buffer)
 
         self.rtc.SetSizeHints(400, 200)
@@ -49,10 +48,18 @@ class RichTextFrame(wx.Frame):
         self.AddRTCHandlers()
 
         self.Layout()
+        self.set_default_style()
         if not title:
             wx.CallAfter(self.titleCtrl.SetFocus)
         else:
             wx.CallAfter(self.rtc.SetFocus)
+
+    def set_default_style(self):
+        tmpStyle = rt.RichTextAttr()
+        #tmpStyle.SetFontFaceName('Courier New')
+        tmpStyle.SetFontSize(12)
+        self.rtc.SetBasicStyle(tmpStyle)
+        self.rtc.SetDefaultStyle(tmpStyle)
 
     def AddRTCHandlers(self):
         rt.RichTextBuffer.AddHandler(rt.RichTextHTMLHandler())
@@ -73,11 +80,20 @@ class RichTextFrame(wx.Frame):
             self.rtc.Refresh()
 
     def on_title_key_char(self, event):
-
         if event.GetKeyCode() in [wx.WXK_TAB, wx.WXK_RETURN]:
             self.rtc.SetFocus()
         else:
             event.Skip()
+
+    def on_rtc_key_char(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == 2:  # CTRL+B
+            self.rtc.ApplyBoldToSelection()
+        if keycode == 9:  # CTRL+I
+            self.rtc.ApplyItalicToSelection()
+        if keycode == 21:  # CTRL+U
+            self.rtc.ApplyUnderlineToSelection()
+        event.Skip()
 
     def getTitle(self):
         return
