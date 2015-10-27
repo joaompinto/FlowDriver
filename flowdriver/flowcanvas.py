@@ -192,9 +192,10 @@ class MyCanvas(wx.ScrolledWindow):
     def OnLeftButtonEvent(self, event):
 
         event_pos = wx.Point(event.GetX(), event.GetY())
-
-        if self.IsAutoScrolling():
-            self.StopAutoScrolling()
+	
+	# Not available on wxPython2.8
+        #if self.IsAutoScrolling():
+        #    self.StopAutoScrolling()
 
         if event.LeftDown():
             self.SetFocus()
