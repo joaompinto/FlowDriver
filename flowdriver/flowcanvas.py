@@ -95,7 +95,10 @@ class MyCanvas(wx.ScrolledWindow):
         dc.SetBackground(wx.Brush("LIGHT GREY"))
         dc.Clear()
         dc.BeginDrawing()
+        # Arrows over items, items over lines
+        self.DrawFlowLinkLines(dc)
         self.DrawFlowItems(dc)
+        self.DrawFlowLinkArrows(dc)
         dc.EndDrawing()
 
     def UpdateDrawing(self):
@@ -159,24 +162,44 @@ class MyCanvas(wx.ScrolledWindow):
                 dc.DrawText(text, item.pos.x + 4, item.pos.y + y)
                 y += 10
 
-        # Draw the link lines
-        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
-        dc.SetBrush(wx.Brush(wx.NamedColour('MEDIUM FOREST GREEN'), wx.SOLID))
-        for linked_item in item.linked_items:
-            source_pos, target_pos = self.determine_link_points(item, linked_item)
-            dc.DrawLine(source_pos.x, source_pos.y, target_pos.x, target_pos.y)
-            angle = atan2(target_pos.y - source_pos.y, target_pos.x - source_pos.x)
-            ARROW_SIZE = 10
-            pol_points = [(target_pos.x-ARROW_SIZE*cos(angle-pi/6), target_pos.y-ARROW_SIZE*sin(angle-pi/4)),
-                          (target_pos.x, target_pos.y),
-                          (target_pos.x-ARROW_SIZE*cos(angle+pi/6), target_pos.y-ARROW_SIZE*sin(angle+pi/4)),
-                          #(target_pos.x, target_pos.y),
-                          ]
-            dc.DrawPolygon(pol_points)
+
 
     def DrawFlowItems(self, dc):
         for item in self.flow_items:
             self.DrawItem(item, dc)
+
+    def DrawFlowLinkLines(self, dc):
+
+        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 2))
+        dc.SetBrush(wx.Brush(wx.NamedColour('MEDIUM FOREST GREEN'), wx.SOLID))
+
+        for item in self.flow_items:
+            # Draw the link lines
+            for linked_item in item.linked_items:
+                source_pos, target_pos = self.determine_link_points(item, linked_item)
+                dc.DrawLine(source_pos.x, source_pos.y, target_pos.x, target_pos.y)
+
+
+    def DrawFlowLinkArrows(self, dc):
+        dc.SetPen(wx.Pen('MEDIUM FOREST GREEN', 1))
+        dc.SetBrush(wx.Brush(wx.NamedColour('GREEN'), wx.SOLID))
+
+        for item in self.flow_items:
+            for linked_item in item.linked_items:
+                source_pos, target_pos = self.determine_link_points(item, linked_item)
+
+                # Draw the arrow
+                ARROW_SIZE = 12
+                ARROW_IN_SIZE = 6
+                angle = atan2(target_pos.y - source_pos.y, target_pos.x - source_pos.x)
+                pol_points = [
+                    (target_pos.x - ARROW_IN_SIZE * cos(angle), target_pos.y - ARROW_IN_SIZE * sin(angle)),
+                    (target_pos.x - ARROW_SIZE * cos(angle - pi / 6), target_pos.y - ARROW_SIZE * sin(angle - pi / 4)),
+                    (target_pos.x, target_pos.y),
+                    (target_pos.x - ARROW_SIZE * cos(angle + pi / 6), target_pos.y - ARROW_SIZE * sin(angle + pi / 4)),
+                    # (target_pos.x, target_pos.y),
+                    ]
+                dc.DrawPolygon(pol_points)
 
     def SetXY(self, event):
         self.x, self.y = self.ConvertEventCoords(event)
@@ -192,9 +215,9 @@ class MyCanvas(wx.ScrolledWindow):
     def OnLeftButtonEvent(self, event):
 
         event_pos = wx.Point(event.GetX(), event.GetY())
-	
-	# Not available on wxPython2.8
-        #if self.IsAutoScrolling():
+
+        # Not available on wxPython2.8
+        # if self.IsAutoScrolling():
         #    self.StopAutoScrolling()
 
         if event.LeftDown():
