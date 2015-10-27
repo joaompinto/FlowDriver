@@ -29,20 +29,21 @@ class RichTextFrame(wx.Frame):
         if title is not None:
             self.titleCtrl.ChangeValue(title)
         self.titleCtrl.Bind(wx.EVT_CHAR, self.on_title_key_char)
+        self.titleCtrl.Bind(wx.EVT_TEXT, self.OnTextChange)
         verticalSizer.Add(self.titleCtrl, 0, wx.ALL, 5)
 
         self.Centre(wx.BOTH)
 
         self.rtc = rt.RichTextCtrl(self, style=wx.VSCROLL | wx.HSCROLL | wx.NO_BORDER)
         self.rtc.Bind(wx.EVT_CHAR, self.on_rtc_key_char)
+        self.rtc.Bind(wx.EVT_TEXT, self.OnTextChange)
+
         wx.CallAfter(self.load_rtc_buffer)
 
         self.rtc.SetSizeHints(400, 200)
 
 
         verticalSizer.Add(self.rtc, 0, wx.ALL, 5)
-
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
         self.SetSizer(verticalSizer)
         self.AddRTCHandlers()
@@ -79,6 +80,9 @@ class RichTextFrame(wx.Frame):
             handler.LoadStream(buffer, stream)
             self.rtc.Refresh()
 
+    def OnTextChange(self, event):
+        self.update_parent()
+
     def on_title_key_char(self, event):
         if event.GetKeyCode() in [wx.WXK_TAB, wx.WXK_RETURN]:
             self.rtc.SetFocus()
@@ -91,6 +95,8 @@ class RichTextFrame(wx.Frame):
             self.rtc.ApplyBoldToSelection()
         if keycode == 9:  # CTRL+I
             self.rtc.ApplyItalicToSelection()
+        if keycode == 12:  # CTRL+L
+            pass
         if keycode == 21:  # CTRL+U
             self.rtc.ApplyUnderlineToSelection()
         event.Skip()
@@ -98,17 +104,13 @@ class RichTextFrame(wx.Frame):
     def getTitle(self):
         return
 
-    def OnClose(self, event):
+    def update_parent(self):
         handler = rt.RichTextXMLHandler()
         handler.SetFlags(rt.RICHTEXT_HANDLER_SAVE_IMAGES_TO_MEMORY)
 
         stream = StringIO()
         handler.SaveStream(self.rtc.GetBuffer(), stream)
         content = stream.getvalue()
-        print "closing with", content
-        if self.is_new_item:
-            evt = AddFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=content)
-        else:
-            evt = UpdateFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=content)
+        evt = UpdateFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=content)
         wx.PostEvent(self.parent, evt)
-        self.Destroy()
+

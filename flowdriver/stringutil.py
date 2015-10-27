@@ -40,4 +40,7 @@ def html_decode(s):
 
 
 def rtc2txt(rtc):
-    return html_decode(re.sub('<[^<]+>', "", rtc).strip(' \n').replace('</paragraph>', '\n'))
+    if rtc is None:
+        return None
+    else:
+        return html_decode(re.sub('<[^<]+>', "", rtc).strip(' \n').replace('</paragraph>', '\n'))

@@ -16,7 +16,7 @@ from math import atan2, cos, sin, pi
 from stringutil import rtc2txt
 
 class FlowItem(object):
-    def __init__(self, pos, size, title, content):
+    def __init__(self, pos, size, title='', content=''):
         self.pos = pos
         self.size = size
         self.title = title
@@ -201,7 +201,6 @@ class MyCanvas(wx.ScrolledWindow):
                     (target_pos.x - ARROW_SIZE * cos(angle - pi / 6), target_pos.y - ARROW_SIZE * sin(angle - pi / 4)),
                     (target_pos.x, target_pos.y),
                     (target_pos.x - ARROW_SIZE * cos(angle + pi / 6), target_pos.y - ARROW_SIZE * sin(angle + pi / 4)),
-                    # (target_pos.x, target_pos.y),
                     ]
                 dc.DrawPolygon(pol_points)
 
@@ -256,7 +255,6 @@ class MyCanvas(wx.ScrolledWindow):
             self.clicked_item = None
 
     def OnRightButtonEvent(self, event):
-        event_pos = wx.Point(event.GetX(), event.GetY())
         clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
         if self.selected_item and clicked_item and clicked_item != self.selected_item:
             if clicked_item not in self.selected_item.linked_items:
@@ -289,16 +287,17 @@ class MyCanvas(wx.ScrolledWindow):
             if 0 <= x_delta < item.size.x and 0 <= y_delta < item.size.y:
                 return item
 
-    def add_flow_item(self, title, content):
+    def add_flow_item(self):
         pos = self.get_next_item_position()
         size = wx.Size(120, 110)
-        item = FlowItem(pos, size, title, content)
+        item = FlowItem(pos, size)
         self.flow_items.append(item)
         if self.selected_item:  # Link from selected item
             self.selected_item.linked_items.append(item)
         self.selected_item = item
         self.UpdateDrawing()
         self.x, self.y = pos
+        return item
 
     def OnAddFlowItem(self, event):
         self.add_flow_item(event.title, event.content)
@@ -308,3 +307,4 @@ class MyCanvas(wx.ScrolledWindow):
         self.selected_item.content = event.content
         self.selected_item.text_content = rtc2txt(event.content)
         self.UpdateDrawing()
+        self.Refresh()

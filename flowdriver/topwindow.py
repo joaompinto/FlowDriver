@@ -63,6 +63,7 @@ class TopWindow(wx.Frame):
         self.mainSizer.Add(self.toolbar, 0, wx.EXPAND, 5)
 
     def OnAddFlowItemClick(self, event):
+        self.canvas.add_flow_item()
         RichTextFrame(self.canvas).Show()
 
     def OnFileSave(self, event):
