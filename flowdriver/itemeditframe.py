@@ -37,6 +37,9 @@ class RichTextFrame(wx.Frame):
         self.rtc = rt.RichTextCtrl(self, style=wx.VSCROLL | wx.HSCROLL | wx.NO_BORDER)
         self.rtc.Bind(wx.EVT_CHAR, self.on_rtc_key_char)
         self.rtc.Bind(wx.EVT_TEXT, self.OnTextChange)
+        self.rtc.Bind(wx.EVT_TEXT_URL, self.OnURL)
+        self.rtc.Bind(wx.EVT_LEFT_UP, self.OnLeftUp)
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
         wx.CallAfter(self.load_rtc_buffer)
 
@@ -55,6 +58,27 @@ class RichTextFrame(wx.Frame):
         else:
             wx.CallAfter(self.rtc.SetFocus)
 
+        # Handle special CTRL-click case
+        self.ctrl_down = False
+        self.rtc.Bind(wx.EVT_KEY_UP, self.OnUpdateCtrlState)
+        self.rtc.Bind(wx.EVT_KEY_DOWN, self.OnUpdateCtrlState)
+
+
+    def update(self, title, content):
+        print "frame update", title, content
+        self.titleCtrl.ChangeValue(title)
+        self.content = content
+        self.load_rtc_buffer()
+
+
+    def OnUpdateCtrlState(self, event):
+        self.ctrl_down = event.ControlDown()
+        event.Skip()
+
+    def OnButton(self, event):
+        if self.ctrl_down:
+            wx.MessageBox("control down")
+
     def set_default_style(self):
         tmpStyle = rt.RichTextAttr()
         #tmpStyle.SetFontFaceName('Courier New')
@@ -68,8 +92,9 @@ class RichTextFrame(wx.Frame):
 
     def load_rtc_buffer(self):
         content = self.content
-        if content:
-            print "my content is", content
+        if not content:
+            self.rtc.Clear()
+        else:
             stream = StringIO()
             handler = rt.RichTextXMLHandler()
             handler.SetFlags(rt.RICHTEXT_HANDLER_SAVE_IMAGES_TO_MEMORY)
@@ -78,7 +103,8 @@ class RichTextFrame(wx.Frame):
             stream.write(content)
             stream.seek(0)
             handler.LoadStream(buffer, stream)
-            self.rtc.Refresh()
+
+        self.rtc.Refresh()
 
     def OnTextChange(self, event):
         self.update_parent()
@@ -96,7 +122,8 @@ class RichTextFrame(wx.Frame):
         if keycode == 9:  # CTRL+I
             self.rtc.ApplyItalicToSelection()
         if keycode == 12:  # CTRL+L
-            pass
+            self.ctrl_down = True
+            self.OnLeftUp(event)
         if keycode == 21:  # CTRL+U
             self.rtc.ApplyUnderlineToSelection()
         event.Skip()
@@ -105,6 +132,7 @@ class RichTextFrame(wx.Frame):
         return
 
     def update_parent(self):
+        print "updating parent"
         handler = rt.RichTextXMLHandler()
         handler.SetFlags(rt.RICHTEXT_HANDLER_SAVE_IMAGES_TO_MEMORY)
 
@@ -114,3 +142,34 @@ class RichTextFrame(wx.Frame):
         evt = UpdateFlowItemEvent(title=self.titleCtrl.GetLineText(0), content=content)
         wx.PostEvent(self.parent, evt)
 
+    def create_link_to(self, item):
+        urlStyle = rt.RichTextAttr()
+        urlStyle.SetTextColour(wx.BLUE)
+        urlStyle.SetFontUnderlined(True)
+        self.rtc.BeginStyle(urlStyle)
+        r = self.rtc.GetSelectionRange()
+        text = self.rtc.GetStringSelection()
+        self.rtc.Remove(r.GetStart(), r.GetEnd())
+        print item.id
+        self.rtc.BeginURL(item.id)
+        self.rtc.WriteText(text)
+        self.rtc.EndURL()
+        self.rtc.EndStyle();
+
+    def OnURL(self, event):
+        print "on url", event.GetString()
+        evt = SwitchFlowItemEvent(item_id = event.GetString())
+        wx.PostEvent(self.parent, evt)
+
+    def OnLeftUp(self, event):
+        if self.ctrl_down:
+            self.ctrl_down = False
+            evt = SelectFlowItemEvent()
+            self.Hide()
+            wx.PostEvent(self.parent, evt)
+        else:
+            event.Skip()
+
+    def OnClose(self, event):
+        self.Hide()
+        return

@@ -64,7 +64,6 @@ class TopWindow(wx.Frame):
 
     def OnAddFlowItemClick(self, event):
         self.canvas.add_flow_item()
-        RichTextFrame(self.canvas).Show()
 
     def OnFileSave(self, event):
         if self.openFilename is None:

@@ -23,7 +23,8 @@ class FlowItem(object):
         self.content = content
         self.text_content = rtc2txt(content)
         self.linked_items = []
-        self.id = uuid4()
+        self.id = str(uuid4())
+        print "item with", self.id
 
     @property
     def center(self):
@@ -38,20 +39,22 @@ class MyCanvas(wx.ScrolledWindow):
         self.clicked_item = None
         self.lines = []
         self.flow_items = []
-        self.maxWidth = 1024
-        self.maxHeight = 1024
+        self.maxWidth = 800
+        self.maxHeight = 600
         self.x = self.y = 0
         self.curLine = []
         self.click_offset = None
+        self.select_mode = False  # True means we are selecting an item to link to
 
         self.SetVirtualSize((self.maxWidth, self.maxHeight))
-        self.SetScrollRate(20, 20)
+        #self.SetScrollRate(20, 20)
 
         # Initialize the buffer bitmap.  No real DC is needed at this point.
         self.buffer = wx.EmptyBitmap(self.maxWidth, self.maxHeight)
         self.UpdateDrawing()
 
         self.capturing_mouse = False
+        self.edit_frame = RichTextFrame(self)
 
         self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftButtonEvent)
         self.Bind(wx.EVT_RIGHT_UP, self.OnRightButtonEvent)
@@ -61,7 +64,13 @@ class MyCanvas(wx.ScrolledWindow):
         self.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.Bind(EVT_UPD_FLOW_ITEM, self.OnUpdateFlowItem)
         self.Bind(EVT_ADD_FLOW_ITEM, self.OnAddFlowItem)
+        self.Bind(EVT_SELECT_FLOW_ITEM, self.OnSelectFlowItem)
+        self.Bind(EVT_SWITCH_FLOW_ITEM, self.OnSwitchFlowItem)
         self.Bind(wx.EVT_KEY_DOWN, self.onKeyDown)
+        if hasattr(self, 'StopAutoScrolling'):
+            print "stopping auto scroll"
+            self.StopAutoScrolling()
+
 
     def onKeyDown(self, event):
         if event.GetKeyCode() == wx.WXK_DELETE and self.selected_item:
@@ -87,7 +96,6 @@ class MyCanvas(wx.ScrolledWindow):
         return self.maxHeight
 
     def OnPaint(self, event):
-
         dc = wx.BufferedPaintDC(self, self.buffer, wx.BUFFER_VIRTUAL_AREA)
         # the bitmap is copied to the screen when the object goes out of scope
         del dc
@@ -132,11 +140,13 @@ class MyCanvas(wx.ScrolledWindow):
         return source_item.pos + source_offset, target_item.pos + target_offset
 
     def DrawItem(self, item, dc):
+        #if item == self.selected_item:
+        #    dc.SetPen(wx.Pen("BLACK", 2))
+        dc.SetPen(wx.Pen("WHITE", 0))
         if item == self.selected_item:
-            dc.SetPen(wx.Pen("BLACK", 2))
+            dc.SetBrush(wx.Brush(wx.Colour(204, 255, 229)))
         else:
-            dc.SetPen(wx.Pen("WHITE", 0))
-        dc.SetBrush(wx.Brush("WHITE"))
+            dc.SetBrush(wx.Brush("WHITE"))
         dc.DrawRectangle(item.pos.x, item.pos.y, item.size.x, item.size.y)
         dc.SetPen(wx.Pen("WHITE", 0))
 
@@ -211,9 +221,6 @@ class MyCanvas(wx.ScrolledWindow):
         x, y = self.CalcUnscrolledPosition(event.GetX(), event.GetY())
         return wx.Point(x, y)
 
-    def OnDoubleClick(self, event):
-        if self.selected_item:
-            RichTextFrame(self, self.selected_item.title, self.selected_item.content).Show()
 
     def OnLeftButtonEvent(self, event):
 
@@ -226,10 +233,20 @@ class MyCanvas(wx.ScrolledWindow):
         if event.LeftDown():
             self.SetFocus()
             self.clicked_item = clicked_item = self.item_at_pos(self.ConvertEventCoords(event))
+            if self.select_mode:
+                self.select_mode = False
+                if self.clicked_item:
+                    self.edit_frame.create_link_to(self.clicked_item)
+                    if self.clicked_item not in self.selected_item.linked_items:
+                        self.selected_item.linked_items.append(self.clicked_item)
+                self.edit_frame.Show()
+                return event.Skip()
+
             if clicked_item:
                 self.selected_item = clicked_item
+                self.edit_frame.update(self.selected_item.title, self.selected_item.content)
                 self.capturing_mouse = True
-                self.CaptureMouse()
+                #self.CaptureMouse()
 
                 self.selected_item = clicked_item
                 self.UpdateDrawing()  # Need to update the selected item color
@@ -250,7 +267,7 @@ class MyCanvas(wx.ScrolledWindow):
 
         elif event.LeftUp():
             if self.capturing_mouse:
-                self.ReleaseMouse()
+                #self.ReleaseMouse()
                 self.capturing_mouse = False
             self.clicked_item = None
 
@@ -288,23 +305,44 @@ class MyCanvas(wx.ScrolledWindow):
                 return item
 
     def add_flow_item(self):
+        #self.edit_frame.Show()
         pos = self.get_next_item_position()
         size = wx.Size(120, 110)
         item = FlowItem(pos, size)
         self.flow_items.append(item)
-        if self.selected_item:  # Link from selected item
-            self.selected_item.linked_items.append(item)
+        #if self.selected_item:  # Link from selected item
+        #    self.selected_item.linked_items.append(item)
         self.selected_item = item
         self.UpdateDrawing()
         self.x, self.y = pos
         return item
 
+    def OnDoubleClick(self, event):
+        if self.selected_item:
+            self.edit_frame.update(self.selected_item.title, self.selected_item.content)
+            self.edit_frame.Show()
+
     def OnAddFlowItem(self, event):
         self.add_flow_item(event.title, event.content)
 
     def OnUpdateFlowItem(self, event):
-        self.selected_item.title = event.title
-        self.selected_item.content = event.content
-        self.selected_item.text_content = rtc2txt(event.content)
+        if self.selected_item:
+            self.selected_item.title = event.title
+            self.selected_item.content = event.content
+            self.selected_item.text_content = rtc2txt(event.content)
         self.UpdateDrawing()
         self.Refresh()
+
+    def OnSelectFlowItem(self, event):
+        self.select_mode = True
+
+    def OnSwitchFlowItem(self, event):
+        switch_to_item_id = event.item_id
+        for item in self.flow_items:
+            print switch_to_item_id, item.id
+            if switch_to_item_id == item.id:
+                print "switching to", self.selected_item
+                self.selected_item = item
+                self.UpdateDrawing()
+                self.OnDoubleClick(event)
+
